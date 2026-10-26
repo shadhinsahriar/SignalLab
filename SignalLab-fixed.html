@@ -1,0 +1,1972 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SignalLab | Digital Line Coding Visualizer</title>
+  <meta name="description" content="Advanced Digital Line Coding Waveform Visualizer & Signal Engine. Interactively explore NRZ, Manchester, AMI, MLT-3, 2B1Q, 8B6T codebooks with dynamic canvas viewport controls.">
+  <meta property="og:title" content="SignalLab Advanced | Digital Line Coding Visualizer">
+  <meta property="og:description" content="Explore digital line coding waveforms with an advanced canvas graph engine, interactive codebooks, and real-time trace inspection.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SignalLab Advanced">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "SignalLab Advanced",
+    "alternateName": "Digital Line Coding Visualizer Engine",
+    "description": "Interactive line coding waveform renderer, step-by-step bit analyzer, and symbol mapping codebook engine."
+  }
+  </script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              accent: '#38bdf8',
+              glow: '#00f0ff'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html, body {
+      min-height: 100%;
+      background-color: #0f172a;
+      color: #f1f5f9;
+    }
+    body {
+      margin: 0;
+      background-image:
+        radial-gradient(ellipse at top left, rgba(14, 165, 233, 0.12), transparent 45%),
+        linear-gradient(135deg, #020617 0%, #0f172a 55%, #111827 100%);
+      background-attachment: fixed;
+    }
+    header, footer { background-color: rgba(2, 6, 23, 0.96); }
+    .site-title {
+      color: #f8fafc;
+      background-image: linear-gradient(90deg, #ffffff, #bae6fd, #38bdf8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    .bg-grid-pattern {
+      background-size: 24px 24px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    }
+
+    .glow-cyan { filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.6)); }
+    .glow-accent { filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.8)); }
+    main > section,
+    main > div.bg-gradient-to-r {
+      background-color: rgba(2, 6, 23, 0.94);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans text-slate-100 overflow-x-hidden selection:bg-brand-500 selection:text-white">
+
+  <header class="border-b border-slate-800 bg-slate-950/90 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-gradient-to-tr from-brand-600 via-cyan-400 to-indigo-500 p-2.5 rounded-xl text-slate-950 font-black shadow-lg shadow-cyan-500/20">
+          <i data-lucide="activity" class="w-6 h-6 stroke-[3]"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="site-title text-lg font-black tracking-tight">
+              SignalLab
+            </h1>
+    
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">Digital Line Coding Waveform Engine & Codebook Mapping System</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <div id="test-suite-badge" class="px-3 py-1 rounded-full text-xs font-mono font-medium bg-emerald-950/80 text-emerald-400 border border-emerald-800/50 flex items-center space-x-1.5 shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="test-badge-text">Engine Audit Passed (11/11)</span>
+        </div>
+        <button id="btn-run-tests" title="Re-run Engine Diagnostics" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition border border-slate-800">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <section class="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+        
+        <div class="md:col-span-4 space-y-1.5">
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex justify-between">
+            <span>Binary Input Sequence</span>
+            <span class="text-slate-500 font-mono text-[10px]" id="bit-count-label">8 bits</span>
+          </label>
+          <div class="relative">
+            <input type="text" id="binary-input" value="10110010" maxlength="16" placeholder="e.g. 10110010"
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 font-mono text-cyan-400 font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm sm:text-base shadow-inner">
+            <button id="btn-random-bits" title="Generate Random Bits" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 text-xs font-mono transition">
+              <i data-lucide="shuffle" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="md:col-span-5 space-y-1.5">
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">Line Coding Technique</label>
+          <select id="scheme-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm shadow-inner">
+            <optgroup label="Unipolar & Polar NRZ">
+              <option value="UNIPOLAR_NRZ">Unipolar NRZ (Non-Return-to-Zero)</option>
+              <option value="NRZ_L">Polar NRZ-L (Level)</option>
+              <option value="NRZ_I">Polar NRZ-I (Invert on 1)</option>
+            </optgroup>
+            <optgroup label="Return to Zero & Biphase">
+              <option value="POLAR_RZ">Polar RZ (Return to Zero)</option>
+              <option value="MANCHESTER" selected>Manchester (IEEE 802.3)</option>
+              <option value="DIFF_MANCHESTER">Differential Manchester</option>
+            </optgroup>
+            <optgroup label="Multilevel / Ternary & Multi-state">
+              <option value="AMI">Bipolar AMI (Alternate Mark Inversion)</option>
+              <option value="PSEUDOTERNARY">Pseudoternary</option>
+              <option value="MLT_3">MLT-3 (Multi-Level Transmit 3)</option>
+            </optgroup>
+            <optgroup label="Block & Multi-Bit Encodings">
+              <option value="2B1Q">2B1Q (2 Binary, 1 Quaternary Level)</option>
+              <option value="8B6T">8B6T (8 Binary, 6 Ternary Codebook)</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="md:col-span-3 space-y-1.5">
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex justify-between">
+            <span>Playback Speed</span>
+            <span class="text-brand-accent font-mono font-bold" id="speed-display">0.2×</span>
+          </label>
+          <div class="grid grid-cols-5 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+            <button class="speed-btn active bg-brand-600 text-white rounded-lg py-1.5 text-xs font-mono font-bold transition" data-speed="0.2">0.2x</button>
+            <button class="speed-btn text-slate-400 hover:text-slate-200 rounded-lg py-1.5 text-xs font-mono font-bold transition" data-speed="0.5">0.5x</button>
+            <button class="speed-btn text-slate-400 hover:text-slate-200 rounded-lg py-1.5 text-xs font-mono font-bold transition" data-speed="1.0">1.0x</button>
+            <button class="speed-btn text-slate-400 hover:text-slate-200 rounded-lg py-1.5 text-xs font-mono font-bold transition" data-speed="1.5">1.5x</button>
+            <button class="speed-btn text-slate-400 hover:text-slate-200 rounded-lg py-1.5 text-xs font-mono font-bold transition" data-speed="2.0">2.0x</button>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="convention-options-bar" class="pt-3 border-t border-slate-800/80 flex flex-wrap gap-4 text-xs items-center text-slate-300">
+        <span class="font-semibold text-slate-400 uppercase tracking-wider text-[11px] flex items-center space-x-1">
+          <i data-lucide="sliders" class="w-3.5 h-3.5 text-brand-accent"></i>
+          <span>Convention Config:</span>
+        </span>
+        <div id="dynamic-toggles-container" class="flex flex-wrap gap-4">
+        </div>
+      </div>
+    </section>
+
+    <div class="bg-gradient-to-r from-brand-950/70 via-slate-900 to-indigo-950/70 border border-brand-500/30 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div class="flex items-start space-x-3">
+        <div class="p-2.5 bg-brand-500/10 border border-brand-500/30 rounded-xl text-brand-accent shrink-0 mt-0.5 shadow-inner">
+          <i data-lucide="zap" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-brand-accent flex items-center space-x-2">
+            <span>Signal Memory Helper</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] bg-brand-500/20 text-brand-accent border border-brand-500/30 font-mono">Encoding Rule</span>
+          </h2>
+          <p id="memory-trick-text" class="text-sm sm:text-base font-semibold text-white mt-0.5">
+            Middle transition every time: 0 starts HIGH & drops ↘, 1 starts LOW & rises ↗.
+          </p>
+        </div>
+      </div>
+      <div id="mapping-summary-pill" class="self-stretch md:self-auto px-4 py-2 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs font-mono text-slate-300 shrink-0 flex items-center justify-center space-x-2 shadow-inner">
+        <span class="text-slate-500">Active Standard:</span>
+        <span id="mapping-summary-text" class="text-cyan-400 font-bold">IEEE 802.3 Standard</span>
+      </div>
+    </div>
+
+    <section class="bg-slate-950 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-2xl space-y-4">
+      
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div class="flex items-center space-x-1.5">
+            <span class="w-3 h-3 rounded-full bg-red-500 inline-block shadow-sm"></span>
+            <span class="w-3 h-3 rounded-full bg-yellow-500 inline-block shadow-sm"></span>
+            <span class="w-3 h-3 rounded-full bg-green-500 inline-block shadow-sm"></span>
+          </div>
+          <h3 class="text-sm font-bold text-slate-200 font-mono flex items-center space-x-2">
+            <i data-lucide="line-chart" class="w-4 h-4 text-brand-accent"></i>
+            <span>Advanced Waveform Canvas</span>
+          </h3>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          
+          <div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-xl p-1 text-xs">
+            <button id="btn-toggle-grid" title="Toggle Major/Minor Grid Lines" class="px-2 py-1 rounded-lg hover:bg-slate-800 text-slate-300 transition flex items-center space-x-1">
+              <i data-lucide="grid" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span class="hidden lg:inline text-[11px]">Grid</span>
+            </button>
+            <button id="btn-toggle-baseline" title="Toggle Unipolar NRZ Dual-Trace Baseline" class="px-2 py-1 rounded-lg hover:bg-slate-800 text-slate-300 transition flex items-center space-x-1">
+              <i data-lucide="layers" class="w-3.5 h-3.5 text-yellow-400"></i>
+              <span class="hidden lg:inline text-[11px]">Dual Trace</span>
+            </button>
+            <div class="h-4 w-px bg-slate-800"></div>
+            <button id="btn-zoom-out" title="Zoom Out Canvas" class="p-1.5 hover:bg-slate-800 text-slate-300 rounded-lg transition">
+              <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+            </button>
+            <span id="zoom-level-label" class="text-[11px] font-mono text-slate-400 px-1 font-bold">1.0x</span>
+            <button id="btn-zoom-in" title="Zoom In Canvas" class="p-1.5 hover:bg-slate-800 text-slate-300 rounded-lg transition">
+              <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+            </button>
+            <button id="btn-reset-view" title="Reset Viewport Pan & Zoom" class="p-1.5 hover:bg-slate-800 text-slate-300 rounded-lg transition">
+              <i data-lucide="maximize" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <div class="h-6 w-px bg-slate-800 hidden sm:block"></div>
+
+          <div class="flex items-center space-x-1">
+            <button id="btn-restart" class="p-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold flex items-center space-x-1 border border-slate-800 transition">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">Restart</span>
+            </button>
+            <button id="btn-prev-step" class="p-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold flex items-center space-x-1 border border-slate-800 transition">
+              <i data-lucide="chevron-left" class="w-4 h-4"></i>
+              <span class="hidden sm:inline">Prev Step</span>
+            </button>
+            <button id="btn-play-pause" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-lg shadow-brand-500/20 transition">
+              <i id="play-pause-icon" data-lucide="pause" class="w-4 h-4"></i>
+              <span id="play-pause-label">Pause</span>
+            </button>
+            <button id="btn-next-step" class="p-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold flex items-center space-x-1 border border-slate-800 transition">
+              <span class="hidden sm:inline">Next Step</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+            <button id="btn-show-full" class="p-2 bg-slate-900 hover:bg-slate-800 text-brand-accent rounded-xl text-xs font-semibold flex items-center space-x-1 border border-slate-800 transition">
+              <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">Show Full</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex items-center justify-between text-xs font-mono text-slate-400 px-1">
+          <span class="flex items-center space-x-1.5">
+            <i data-lucide="navigation" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span>Synchronized Bit Stream Navigation:</span>
+          </span>
+          <span class="text-[11px] text-slate-500">Click bit pill to jump directly</span>
+        </div>
+        <div id="bit-nav-bar" class="flex flex-wrap gap-1.5 p-2 bg-slate-900/90 border border-slate-800 rounded-xl overflow-x-auto">
+        </div>
+      </div>
+
+      <div class="relative rounded-xl overflow-hidden bg-slate-900/90 border border-slate-800 shadow-inner">
+        <canvas id="waveform-canvas" class="w-full h-80 sm:h-96 block bg-grid-pattern cursor-grab active:cursor-grabbing"></canvas>
+        
+        <div id="canvas-tooltip" class="absolute pointer-events-none transition-all duration-150 opacity-0 bg-slate-950/95 text-cyan-300 border border-cyan-500/50 px-3 py-1.5 rounded-lg text-[11px] font-mono shadow-2xl backdrop-blur z-30 space-y-0.5">
+          <div id="tooltip-title" class="font-bold text-white flex items-center space-x-1.5">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+            <span id="tooltip-bit-text">Bit 1 Inspection</span>
+          </div>
+          <div id="tooltip-voltage-text" class="text-slate-300">Voltage: +V</div>
+          <div id="tooltip-phase-text" class="text-slate-400 text-[10px]">Phase: First Half (T/2)</div>
+        </div>
+      </div>
+
+    </section>
+
+    <div id="codebook-container" class="transition-all duration-300">
+    </div>
+
+    <section class="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+          <i data-lucide="info" class="w-5 h-5 text-brand-accent"></i>
+          <span>Expanded Step Breakdown & Signal Metrics</span>
+        </h3>
+        <span class="text-xs font-mono text-brand-accent font-semibold" id="step-metrics-header">Step 1 of 8</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+        
+        <div class="md:col-span-7 bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div class="flex items-center space-x-2">
+              <span id="detail-step-badge" class="px-2.5 py-1 bg-brand-500/20 text-brand-accent border border-brand-500/30 rounded-lg text-xs font-mono font-bold">
+                BIT 1
+              </span>
+              <h4 id="detail-step-title" class="text-sm font-bold text-white font-mono">
+                Mandatory Mid-bit Transition (RISING ↗)
+              </h4>
+            </div>
+            <span id="detail-edge-badge" class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/50 flex items-center space-x-1">
+              <span>↗ RISING</span>
+            </span>
+          </div>
+
+          <p id="detail-step-description" class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            Drawing bit 1: Starting at LOW (-V) for the first half of the bit interval, then transitioning HIGH (+V) at the midpoint.
+          </p>
+
+          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800/80 font-mono text-xs">
+            <div class="bg-slate-950/80 p-2 rounded-lg border border-slate-800">
+              <span class="text-slate-500 block text-[10px]">START VOLTAGE</span>
+              <span id="metric-start-v" class="font-bold text-cyan-400 text-sm">-V (-1.0V)</span>
+            </div>
+            <div class="bg-slate-950/80 p-2 rounded-lg border border-slate-800">
+              <span class="text-slate-500 block text-[10px]">MIDPOINT VOLTAGE</span>
+              <span id="metric-mid-v" class="font-bold text-yellow-400 text-sm">+V (+1.0V)</span>
+            </div>
+            <div class="bg-slate-950/80 p-2 rounded-lg border border-slate-800">
+              <span class="text-slate-500 block text-[10px]">END VOLTAGE</span>
+              <span id="metric-end-v" class="font-bold text-cyan-400 text-sm">+V (+1.0V)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="md:col-span-5 bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono flex items-center space-x-1.5">
+            <i data-lucide="gauge" class="w-4 h-4 text-brand-accent"></i>
+            <span>Signal Physical Properties</span>
+          </h4>
+
+          <div class="space-y-2 text-xs font-mono">
+            <div class="flex items-center justify-between p-2 bg-slate-950/80 rounded-lg border border-slate-800">
+              <span class="text-slate-400">DC Component Impact:</span>
+              <span id="metric-dc-impact" class="font-bold text-emerald-400">Zero DC (Balanced)</span>
+            </div>
+            <div class="flex items-center justify-between p-2 bg-slate-950/80 rounded-lg border border-slate-800">
+              <span class="text-slate-400">Clock Self-Synchronization:</span>
+              <span id="metric-sync-rating" class="font-bold text-emerald-400">Excellent (Mid Edges)</span>
+            </div>
+            <div class="flex items-center justify-between p-2 bg-slate-950/80 rounded-lg border border-slate-800">
+              <span class="text-slate-400">Baud Rate Ratio (B/R):</span>
+              <span id="metric-baud-rate" class="font-bold text-cyan-400">2.0 Baud/Bit</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center space-x-2">
+            <i data-lucide="book-open" class="w-5 h-5 text-brand-accent"></i>
+            <span>Bit-by-Bit Learning Explorer</span>
+          </h3>
+          <p class="text-xs text-slate-400">Compare how Bit 0 and Bit 1 are drawn step-by-step for the active scheme</p>
+        </div>
+
+        <div id="state-selector-container" class="flex items-center space-x-2 text-xs font-mono">
+          <span class="text-slate-400">Incoming State:</span>
+          <select id="incoming-state-select" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-cyan-400 font-bold focus:outline-none">
+            <option value="HIGH">Previous Level: HIGH (+V)</option>
+            <option value="LOW">Previous Level: LOW (-V)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3 relative group hover:border-slate-700 transition shadow-inner">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+            <div class="flex items-center space-x-2">
+              <span class="w-6 h-6 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center text-xs font-mono font-bold">0</span>
+              <h4 class="text-sm font-bold text-slate-200">How to draw Bit '0'</h4>
+            </div>
+            <button class="btn-demo-bit px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 rounded-lg text-xs font-mono font-medium transition flex items-center space-x-1" data-bit="0">
+              <i data-lucide="play" class="w-3 h-3"></i>
+              <span>Animate 0.2×</span>
+            </button>
+          </div>
+          <canvas id="canvas-bit-0" class="w-full h-28 bg-slate-950/60 rounded-lg border border-slate-800/60 block bg-grid-pattern"></canvas>
+          <ul id="rule-list-bit-0" class="text-xs text-slate-300 space-y-1 font-mono list-disc list-inside">
+          </ul>
+        </div>
+
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3 relative group hover:border-slate-700 transition shadow-inner">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+            <div class="flex items-center space-x-2">
+              <span class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-xs font-mono font-bold">1</span>
+              <h4 class="text-sm font-bold text-slate-200">How to draw Bit '1'</h4>
+            </div>
+            <button class="btn-demo-bit px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-xs font-mono font-medium transition flex items-center space-x-1" data-bit="1">
+              <i data-lucide="play" class="w-3 h-3"></i>
+              <span>Animate 0.2×</span>
+            </button>
+          </div>
+          <canvas id="canvas-bit-1" class="w-full h-28 bg-slate-950/60 rounded-lg border border-slate-800/60 block bg-grid-pattern"></canvas>
+          <ul id="rule-list-bit-1" class="text-xs text-slate-300 space-y-1 font-mono list-disc list-inside">
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+          <i data-lucide="table" class="w-5 h-5 text-brand-accent"></i>
+          <span>Compare Line Coding Techniques</span>
+        </h3>
+        <span class="text-xs text-slate-400">Complete Master Technical Matrix</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-900 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
+            <tr>
+              <th class="p-3">Scheme</th>
+              <th class="p-3">Bit 0 Action</th>
+              <th class="p-3">Bit 1 Action</th>
+              <th class="p-3">Mid-bit Transition?</th>
+              <th class="p-3">DC Component?</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 font-mono">
+            <tr class="hover:bg-slate-900/50">
+              <td class="p-3 font-bold text-cyan-400">Unipolar NRZ</td>
+              <td class="p-3">0V Level</td>
+              <td class="p-3">+V Level</td>
+              <td class="p-3 text-red-400">No</td>
+              <td class="p-3 text-amber-400">High DC</td>
+            </tr>
+            <tr class="hover:bg-slate-900/50">
+              <td class="p-3 font-bold text-cyan-400">Polar NRZ-L</td>
+              <td class="p-3">+V or -V Level</td>
+              <td class="p-3">Opposite Level</td>
+              <td class="p-3 text-red-400">No</td>
+              <td class="p-3 text-amber-400">Moderate DC</td>
+            </tr>
+            <tr class="hover:bg-slate-900/50">
+              <td class="p-3 font-bold text-cyan-400">Polar NRZ-I</td>
+              <td class="p-3">Hold Level</td>
+              <td class="p-3">Invert Level</td>
+              <td class="p-3 text-red-400">No</td>
+              <td class="p-3 text-amber-400">Moderate DC</td>
+            </tr>
+            <tr class="hover:bg-slate-900/50">
+              <td class="p-3 font-bold text-cyan-400">Polar RZ</td>
+              <td class="p-3">-V 1st Half → 0V</td>
+              <td class="p-3">+V 1st Half → 0V</td>
+              <td class="p-3 text-emerald-400">Yes (Return to 0)</td>
+              <td class="p-3 text-amber-400">None if balanced</td>
+            </tr>
+            <tr class="hover:bg-slate-900/50">
+              <td class="p-3 font-bold text-cyan-400">Manchester (IEEE)</td>
+              <td class="p-3">HIGH → LOW (↘)</td>
+              <td class="p-3">LOW → HIGH (↗)</td>
+              <td class="p-3 text-emerald-400">Mandatory</td>
+              <td class="p-3 text-emerald-400">Zero DC</td>
+            </tr>
+            <tr class="hover:bg-slate-900/50">
+              <td class="p-3 font-bold text-cyan-400">Diff Manchester</td>
+              <td class="p-3">Invert Start + Mid Edge</td>
+              <td class="p-3">No Start + Mid Edge</td>
+              <td class="p-3 text-emerald-400">Mandatory</td>
+              <td class="p-3 text-emerald-400">Zero DC</td>
+            </tr>
+            <tr class="hover:bg-slate-900/50">
+              <td class="p-3 font-bold text-cyan-400">Bipolar AMI</td>
+              <td class="p-3">0V Level</td>
+              <td class="p-3">Alternate +V / -V</td>
+              <td class="p-3 text-red-400">No</td>
+              <td class="p-3 text-emerald-400">Zero DC</td>
+            </tr>
+            <tr class="hover:bg-slate-900/50">
+              <td class="p-3 font-bold text-cyan-400">Pseudoternary</td>
+              <td class="p-3">Alternate +V / -V</td>
+              <td class="p-3">0V Level</td>
+              <td class="p-3 text-red-400">No</td>
+              <td class="p-3 text-emerald-400">Zero DC</td>
+            </tr>
+            <tr class="hover:bg-slate-900/50">
+              <td class="p-3 font-bold text-cyan-400">MLT-3</td>
+              <td class="p-3">Hold State</td>
+              <td class="p-3">Next (+V → 0 → -V → 0)</td>
+              <td class="p-3 text-red-400">No</td>
+              <td class="p-3 text-emerald-400">Low DC</td>
+            </tr>
+            <tr class="hover:bg-slate-900/50">
+              <td class="p-3 font-bold text-cyan-400">2B1Q</td>
+              <td class="p-3 flex items-center space-x-1" colspan="2">
+                <span>2 Bits per Symbol (-3V, -1V, +1V, +3V)</span>
+              </td>
+              <td class="p-3 text-red-400">No</td>
+              <td class="p-3 text-amber-400">Moderate DC</td>
+            </tr>
+            <tr class="hover:bg-slate-900/50">
+              <td class="p-3 font-bold text-cyan-400">8B6T</td>
+              <td class="p-3 flex items-center space-x-1" colspan="2">
+                <span>8 Bits Block → 6 Ternary Symbols Codebook</span>
+              </td>
+              <td class="p-3 text-slate-400">Varies</td>
+              <td class="p-3 text-emerald-400">Zero DC (DC Balanced)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-slate-800 bg-slate-950 py-6 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p>SignalLab Advanced Engine — Interactive Digital Communications Platform</p>
+      <p class="font-mono text-[11px] text-slate-400 flex items-center space-x-1">
+        <span>Developed by</span>
+        <a href="https://github.com/shadhinsahriar" target="_blank" rel="noopener noreferrer" class="text-brand-accent hover:underline font-bold flex items-center space-x-1">
+          <i data-lucide="github" class="w-3.5 h-3.5 inline"></i>
+          <span>Sahriar Ekhlas</span>
+        </a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    class LineCodingEngine {
+
+      static encode(scheme, bitString, options = {}) {
+        const bits = bitString.replace(/[^01]/g, '');
+
+        switch (scheme) {
+          case 'UNIPOLAR_NRZ':
+            return this.encodeUnipolarNRZ(bits);
+          case 'NRZ_L':
+            return this.encodeNRZL(bits, options.nrzLMapping || 'ONE_HIGH');
+          case 'NRZ_I':
+            return this.encodeNRZI(bits, options.nrzIInitial || 'HIGH');
+          case 'POLAR_RZ':
+            return this.encodePolarRZ(bits, options.rzConvention || 'STANDARD');
+          case 'MANCHESTER':
+            return this.encodeManchester(bits, options.manchesterConvention || 'IEEE');
+          case 'DIFF_MANCHESTER':
+            return this.encodeDiffManchester(bits, options.diffInitial || 'HIGH');
+          case 'AMI':
+            return this.encodeAMI(bits, options.amiInitial || 'POSITIVE');
+          case 'PSEUDOTERNARY':
+            return this.encodePseudoternary(bits, options.pseudoInitial || 'POSITIVE');
+          case 'MLT_3':
+            return this.encodeMLT3(bits, options.mlt3InitialState || 0, options.mlt3InitialDir || 1);
+          case '2B1Q':
+            return this.encode2B1Q(bits);
+          case '8B6T':
+            return this.encode8B6T(bits);
+          default:
+            return this.encodeManchester(bits, 'IEEE');
+        }
+      }
+
+      static encodeUnipolarNRZ(bits) {
+        const steps = [];
+        let prevVoltage = 0;
+
+        for (let i = 0; i < bits.length; i++) {
+          const bit = bits[i];
+          const targetVoltage = (bit === '1') ? 1 : 0;
+          const hasBoundaryTransition = (i > 0 && targetVoltage !== prevVoltage);
+
+          steps.push({
+            bitIndex: i,
+            bitLabel: bit,
+            voltageStart: targetVoltage,
+            voltageMid: targetVoltage,
+            voltageEnd: targetVoltage,
+            prevVoltage: prevVoltage,
+            hasBoundaryTransition: hasBoundaryTransition,
+            boundaryTransitionLabel: hasBoundaryTransition ? (targetVoltage > prevVoltage ? 'RISING: 0V → +V' : 'FALLING: +V → 0V') : 'NO TRANSITION',
+            midTransitionLabel: 'NO MID-BIT TRANSITION',
+            ruleSummary: bit === '1' ? '1 goes HIGH (+V)' : '0 stays ZERO (0V)',
+            explanation: `Bit ${bit}: Signal level is maintained at ${targetVoltage > 0 ? '+V' : '0V'} throughout the bit interval.`,
+            dcImpact: bit === '1' ? 'High DC Bias (+V)' : 'Zero Voltage',
+            clockSync: 'Poor (Long run of 0s or 1s loses sync)',
+            baudRatio: '1.0 Baud/Bit'
+          });
+
+          prevVoltage = targetVoltage;
+        }
+
+        return {
+          scheme: 'UNIPOLAR_NRZ',
+          memoryTrick: '1 goes HIGH (+V), 0 stays ZERO (0V).',
+          voltageLevels: [1, 0],
+          voltageLabels: ['+V', '0V'],
+          steps: steps
+        };
+      }
+
+      static encodeNRZL(bits, mapping = 'ONE_HIGH') {
+        const steps = [];
+        let prevVoltage = null;
+
+        for (let i = 0; i < bits.length; i++) {
+          const bit = bits[i];
+          let v = (mapping === 'ONE_HIGH') ? ((bit === '1') ? 1 : -1) : ((bit === '0') ? 1 : -1);
+          const hasBoundaryTransition = (i > 0 && v !== prevVoltage);
+
+          steps.push({
+            bitIndex: i,
+            bitLabel: bit,
+            voltageStart: v,
+            voltageMid: v,
+            voltageEnd: v,
+            prevVoltage: prevVoltage ?? v,
+            hasBoundaryTransition: hasBoundaryTransition,
+            boundaryTransitionLabel: hasBoundaryTransition ? (v > prevVoltage ? 'RISING: -V → +V' : 'FALLING: +V → -V') : 'NO TRANSITION',
+            midTransitionLabel: 'NO MID-BIT TRANSITION',
+            ruleSummary: mapping === 'ONE_HIGH' ? (bit === '1' ? '1 → +V Level' : '0 → -V Level') : (bit === '1' ? '1 → -V Level' : '0 → +V Level'),
+            explanation: `Bit ${bit}: Look at the LEVEL. ${bit === '1' ? 'Bit 1' : 'Bit 0'} maps to ${v > 0 ? '+V' : '-V'} level throughout.`,
+            dcImpact: 'Moderate DC Bias',
+            clockSync: 'Poor (No self-clocking on same bit stream)',
+            baudRatio: '1.0 Baud/Bit'
+          });
+
+          prevVoltage = v;
+        }
+
+        return {
+          scheme: 'NRZ_L',
+          memoryTrick: 'Look at the LEVEL, not the transition.',
+          voltageLevels: [1, -1],
+          voltageLabels: ['+V', '-V'],
+          steps: steps
+        };
+      }
+
+      static encodeNRZI(bits, initialLevel = 'HIGH') {
+        const steps = [];
+        let currentVoltage = (initialLevel === 'HIGH') ? 1 : -1;
+
+        for (let i = 0; i < bits.length; i++) {
+          const bit = bits[i];
+          const prevV = currentVoltage;
+
+          if (bit === '1') {
+            currentVoltage = -currentVoltage;
+          }
+
+          const hasBoundaryTransition = (currentVoltage !== prevV);
+
+          steps.push({
+            bitIndex: i,
+            bitLabel: bit,
+            voltageStart: currentVoltage,
+            voltageMid: currentVoltage,
+            voltageEnd: currentVoltage,
+            prevVoltage: prevV,
+            hasBoundaryTransition: hasBoundaryTransition,
+            boundaryTransitionLabel: hasBoundaryTransition ? (currentVoltage > prevV ? 'INVERT (RISING): -V → +V' : 'INVERT (FALLING): +V → -V') : 'HOLD LEVEL (NO TRANSITION)',
+            midTransitionLabel: 'NO MID-BIT TRANSITION',
+            ruleSummary: bit === '1' ? '1 INVERTS signal level' : '0 HOLDS previous level',
+            explanation: `Bit ${bit}: ${bit === '1' ? 'Invert signal level at bit boundary.' : 'Maintain previous level without inversion.'}`,
+            dcImpact: 'Moderate DC Bias',
+            clockSync: 'Good on 1s, Poor on long 0s',
+            baudRatio: '1.0 Baud/Bit'
+          });
+        }
+
+        return {
+          scheme: 'NRZ_I',
+          memoryTrick: '1 changes (inverts), 0 holds.',
+          voltageLevels: [1, -1],
+          voltageLabels: ['+V', '-V'],
+          steps: steps
+        };
+      }
+
+      static encodePolarRZ(bits, convention = 'STANDARD') {
+        const steps = [];
+
+        for (let i = 0; i < bits.length; i++) {
+          const bit = bits[i];
+          let vStart = (convention === 'STANDARD') ? ((bit === '1') ? 1 : -1) : ((bit === '1') ? -1 : 1);
+          const vMid = 0;
+
+          steps.push({
+            bitIndex: i,
+            bitLabel: bit,
+            voltageStart: vStart,
+            voltageMid: vMid,
+            voltageEnd: vMid,
+            prevVoltage: i > 0 ? steps[i - 1].voltageEnd : 0,
+            hasBoundaryTransition: i > 0 && (vStart !== steps[i - 1].voltageEnd),
+            boundaryTransitionLabel: vStart > 0 ? 'START: Jump to +V' : 'START: Jump to -V',
+            midTransitionLabel: vStart > 0 ? 'RETURN TO ZERO (FALLING ↘)' : 'RETURN TO ZERO (RISING ↗)',
+            ruleSummary: bit === '1' ? '1 → Pulse +V then Return to 0V' : '0 → Pulse -V then Return to 0V',
+            explanation: `Bit ${bit}: Pulse at ${vStart > 0 ? '+V' : '-V'} for 1st half, then return to 0V at midpoint.`,
+            dcImpact: 'Near Zero DC (Balanced)',
+            clockSync: 'Excellent (Mid-bit transition every pulse)',
+            baudRatio: '2.0 Baud/Bit'
+          });
+        }
+
+        return {
+          scheme: 'POLAR_RZ',
+          memoryTrick: 'Pulse first half, return to zero next.',
+          voltageLevels: [1, 0, -1],
+          voltageLabels: ['+V', '0V', '-V'],
+          steps: steps
+        };
+      }
+
+      static encodeManchester(bits, convention = 'IEEE') {
+        const steps = [];
+
+        for (let i = 0; i < bits.length; i++) {
+          const bit = bits[i];
+          let v1 = 0, v2 = 0;
+
+          if (convention === 'IEEE') {
+            v1 = (bit === '0') ? 1 : -1;
+            v2 = (bit === '0') ? -1 : 1;
+          } else {
+            v1 = (bit === '0') ? -1 : 1;
+            v2 = (bit === '0') ? 1 : -1;
+          }
+
+          const prevV = i > 0 ? steps[i - 1].voltageEnd : v1;
+          const hasBoundaryTransition = (i > 0 && v1 !== prevV);
+
+          steps.push({
+            bitIndex: i,
+            bitLabel: bit,
+            voltageStart: v1,
+            voltageMid: v2,
+            voltageEnd: v2,
+            prevVoltage: prevV,
+            hasBoundaryTransition: hasBoundaryTransition,
+            boundaryTransitionLabel: hasBoundaryTransition ? (v1 > prevV ? 'BIT-START RISING' : 'BIT-START FALLING') : 'NO START TRANSITION',
+            midTransitionLabel: v2 > v1 ? 'MID-BIT RISING ↗' : 'MID-BIT FALLING ↘',
+            ruleSummary: bit === '0' ? (convention === 'IEEE' ? '0 → HIGH to LOW (↘)' : '0 → LOW to HIGH (↗)') : (convention === 'IEEE' ? '1 → LOW to HIGH (↗)' : '1 → HIGH to LOW (↘)'),
+            explanation: `Bit ${bit}: Mandatory mid-bit transition from ${v1 > 0 ? '+V' : '-V'} to ${v2 > 0 ? '+V' : '-V'}.`,
+            dcImpact: 'Zero DC (Perfectly Balanced)',
+            clockSync: 'Excellent (Self-clocking on every bit)',
+            baudRatio: '2.0 Baud/Bit'
+          });
+        }
+
+        return {
+          scheme: 'MANCHESTER',
+          memoryTrick: 'Middle transition every time: 0 drops ↘, 1 rises ↗ (IEEE).',
+          voltageLevels: [1, -1],
+          voltageLabels: ['+V', '-V'],
+          steps: steps
+        };
+      }
+
+      static encodeDiffManchester(bits, initialLevel = 'HIGH') {
+        const steps = [];
+        let currentLevel = (initialLevel === 'HIGH') ? 1 : -1;
+
+        for (let i = 0; i < bits.length; i++) {
+          const bit = bits[i];
+
+          if (bit === '0') {
+            currentLevel = -currentLevel;
+          }
+
+          const v1 = currentLevel;
+          const v2 = -currentLevel;
+          currentLevel = v2;
+
+          steps.push({
+            bitIndex: i,
+            bitLabel: bit,
+            voltageStart: v1,
+            voltageMid: v2,
+            voltageEnd: v2,
+            prevVoltage: i > 0 ? steps[i - 1].voltageEnd : (initialLevel === 'HIGH' ? 1 : -1),
+            hasBoundaryTransition: (bit === '0'),
+            boundaryTransitionLabel: (bit === '0') ? 'BIT-START TRANSITION (0)' : 'NO START TRANSITION (1)',
+            midTransitionLabel: v2 > v1 ? 'MANDATORY MID RISING ↗' : 'MANDATORY MID FALLING ↘',
+            ruleSummary: bit === '0' ? '0 → Start transition + Mid edge' : '1 → NO start transition + Mid edge',
+            explanation: `Bit ${bit}: ${bit === '0' ? 'Invert at start of bit.' : 'No transition at start.'} Always invert at midpoint.`,
+            dcImpact: 'Zero DC (Perfectly Balanced)',
+            clockSync: 'Excellent (Self-clocking + Noise Immune)',
+            baudRatio: '2.0 Baud/Bit'
+          });
+        }
+
+        return {
+          scheme: 'DIFF_MANCHESTER',
+          memoryTrick: 'Middle always; start transition tells bit 0.',
+          voltageLevels: [1, -1],
+          voltageLabels: ['+V', '-V'],
+          steps: steps
+        };
+      }
+
+      static encodeAMI(bits, initialPolarity = 'POSITIVE') {
+        const steps = [];
+        let lastPulse = (initialPolarity === 'POSITIVE') ? -1 : 1;
+
+        for (let i = 0; i < bits.length; i++) {
+          const bit = bits[i];
+          let v = 0;
+
+          if (bit === '1') {
+            lastPulse = -lastPulse;
+            v = lastPulse;
+          } else {
+            v = 0;
+          }
+
+          const prevV = i > 0 ? steps[i - 1].voltageEnd : 0;
+
+          steps.push({
+            bitIndex: i,
+            bitLabel: bit,
+            voltageStart: v,
+            voltageMid: v,
+            voltageEnd: v,
+            prevVoltage: prevV,
+            hasBoundaryTransition: (v !== prevV),
+            boundaryTransitionLabel: v !== prevV ? (v > prevV ? 'RISING EDGE' : 'FALLING EDGE') : 'NO TRANSITION',
+            midTransitionLabel: 'NO MID-BIT TRANSITION',
+            ruleSummary: bit === '1' ? `1 → Alternate pulse (${v > 0 ? '+V' : '-V'})` : '0 → Zero Voltage (0V)',
+            explanation: `Bit ${bit}: ${bit === '1' ? `Pulse alternates to ${v > 0 ? '+V' : '-V'}.` : 'Zero voltage level throughout.'}`,
+            dcImpact: 'Zero DC (Alternating Ones Cancel Out)',
+            clockSync: 'Good on 1s, Weak on long 0s',
+            baudRatio: '1.0 Baud/Bit'
+          });
+        }
+
+        return {
+          scheme: 'AMI',
+          memoryTrick: 'Zero stays zero; ones alternate signs (+V, -V).',
+          voltageLevels: [1, 0, -1],
+          voltageLabels: ['+V', '0V', '-V'],
+          steps: steps
+        };
+      }
+
+      static encodePseudoternary(bits, initialPolarity = 'POSITIVE') {
+        const steps = [];
+        let lastPulse = (initialPolarity === 'POSITIVE') ? -1 : 1;
+
+        for (let i = 0; i < bits.length; i++) {
+          const bit = bits[i];
+          let v = 0;
+
+          if (bit === '0') {
+            lastPulse = -lastPulse;
+            v = lastPulse;
+          } else {
+            v = 0;
+          }
+
+          const prevV = i > 0 ? steps[i - 1].voltageEnd : 0;
+
+          steps.push({
+            bitIndex: i,
+            bitLabel: bit,
+            voltageStart: v,
+            voltageMid: v,
+            voltageEnd: v,
+            prevVoltage: prevV,
+            hasBoundaryTransition: (v !== prevV),
+            boundaryTransitionLabel: v !== prevV ? (v > prevV ? 'RISING EDGE' : 'FALLING EDGE') : 'NO TRANSITION',
+            midTransitionLabel: 'NO MID-BIT TRANSITION',
+            ruleSummary: bit === '0' ? `0 → Alternate pulse (${v > 0 ? '+V' : '-V'})` : '1 → Zero Voltage (0V)',
+            explanation: `Bit ${bit}: ${bit === '0' ? `Zero alternates pulse to ${v > 0 ? '+V' : '-V'}.` : 'Bit 1 stays at zero voltage.'}`,
+            dcImpact: 'Zero DC (Alternating Zeros Cancel Out)',
+            clockSync: 'Good on 0s, Weak on long 1s',
+            baudRatio: '1.0 Baud/Bit'
+          });
+        }
+
+        return {
+          scheme: 'PSEUDOTERNARY',
+          memoryTrick: 'One stays zero; zeros alternate signs (+V, -V).',
+          voltageLevels: [1, 0, -1],
+          voltageLabels: ['+V', '0V', '-V'],
+          steps: steps
+        };
+      }
+
+      static encodeMLT3(bits, initialState = 0, initialDir = 1) {
+        const steps = [];
+        let state = initialState;
+        let direction = initialDir;
+
+        const getV = (st) => {
+          if (st === 0) return 1;
+          if (st === 2) return -1;
+          return 0;
+        };
+
+        let currentVoltage = getV(state);
+
+        for (let i = 0; i < bits.length; i++) {
+          const bit = bits[i];
+          const prevV = currentVoltage;
+
+          if (bit === '1') {
+            if (currentVoltage === 0) {
+              currentVoltage = direction === 1 ? 1 : -1;
+            } else if (currentVoltage === 1) {
+              currentVoltage = 0;
+              direction = -1;
+            } else if (currentVoltage === -1) {
+              currentVoltage = 0;
+              direction = 1;
+            }
+          }
+
+          const hasBoundaryTransition = (currentVoltage !== prevV);
+
+          steps.push({
+            bitIndex: i,
+            bitLabel: bit,
+            voltageStart: currentVoltage,
+            voltageMid: currentVoltage,
+            voltageEnd: currentVoltage,
+            prevVoltage: prevV,
+            hasBoundaryTransition: hasBoundaryTransition,
+            boundaryTransitionLabel: hasBoundaryTransition ? (currentVoltage > prevV ? 'ADVANCE STATE (RISING)' : 'ADVANCE STATE (FALLING)') : 'HOLD STATE (NO TRANSITION)',
+            midTransitionLabel: 'NO MID-BIT TRANSITION',
+            ruleSummary: bit === '1' ? `1 → Move state to ${currentVoltage > 0 ? '+V' : (currentVoltage < 0 ? '-V' : '0V')}` : '0 → Hold current level',
+            explanation: `Bit ${bit}: ${bit === '1' ? '1 advances to next state in sequence (+V → 0 → -V → 0).' : '0 maintains current level.'}`,
+            dcImpact: 'Low DC Component',
+            clockSync: 'Good on 1s (Reduces EMI Frequency by 4x)',
+            baudRatio: '0.5 Max Freq Ratio'
+          });
+        }
+
+        return {
+          scheme: 'MLT_3',
+          memoryTrick: '1 moves to next state (+V → 0 → -V → 0), 0 holds.',
+          voltageLevels: [1, 0, -1],
+          voltageLabels: ['+V', '0V', '-V'],
+          steps: steps
+        };
+      }
+
+      static encode2B1Q(bits) {
+        const steps = [];
+        const map = {
+          '00': -1.5,
+          '01': -0.5,
+          '10': 0.5,
+          '11': 1.5
+        };
+
+        let padded = bits;
+        if (padded.length % 2 !== 0) padded += '0';
+
+        let prevV = 0;
+
+        for (let i = 0; i < padded.length; i += 2) {
+          const pair = padded.substring(i, i + 2);
+          const v = map[pair] ?? 0.5;
+
+          const stepIdx = i / 2;
+          steps.push({
+            bitIndex: stepIdx,
+            bitLabel: pair,
+            voltageStart: v,
+            voltageMid: v,
+            voltageEnd: v,
+            isSymbolPair: true,
+            prevVoltage: prevV,
+            hasBoundaryTransition: (v !== prevV && i > 0),
+            boundaryTransitionLabel: v > prevV ? 'QUATERNARY RISING' : 'QUATERNARY FALLING',
+            midTransitionLabel: 'CONSTANT SYMBOL LEVEL',
+            ruleSummary: `Pair ${pair} → Level ${v > 1 ? '+3V' : (v > 0 ? '+1V' : (v < -1 ? '-3V' : '-1V'))}`,
+            explanation: `Symbol '${pair}': Mapped to quaternary level ${v > 1 ? '+3V' : (v > 0 ? '+1V' : (v < -1 ? '-3V' : '-1V'))} for 2-bit duration.`,
+            dcImpact: 'Moderate DC Bias',
+            clockSync: 'Moderate (2 bits per symbol rate)',
+            baudRatio: '0.5 Baud/Bit (Halves Data Bandwidth)'
+          });
+
+          prevV = v;
+        }
+
+        return {
+          scheme: '2B1Q',
+          memoryTrick: '2 bits = 1 Quaternary Symbol (00:-3V, 01:-1V, 10:+1V, 11:+3V).',
+          voltageLevels: [1.5, 0.5, -0.5, -1.5],
+          voltageLabels: ['+3V', '+1V', '-1V', '-3V'],
+          steps: steps
+        };
+      }
+
+      static encode8B6T(bits) {
+        const steps = [];
+        const sampleCodebook = {
+          '10110010': ['+', '0', '-', '+', '-', '0'],
+          'DEFAULT': ['+', '-', '0', '0', '+', '-']
+        };
+
+        let padded = bits;
+        while (padded.length % 8 !== 0) padded += '0';
+
+        let prevV = 0;
+
+        for (let b = 0; b < padded.length; b += 8) {
+          const block = padded.substring(b, b + 8);
+          const ternarySymbols = sampleCodebook[block] || sampleCodebook['DEFAULT'];
+
+          for (let s = 0; s < ternarySymbols.length; s++) {
+            const sym = ternarySymbols[s];
+            const v = sym === '+' ? 1 : (sym === '-' ? -1 : 0);
+            const overallIdx = (b / 8) * 6 + s;
+
+            steps.push({
+              bitIndex: overallIdx,
+              bitLabel: `${block.substring(0, 4)}..[${sym}]`,
+              voltageStart: v,
+              voltageMid: v,
+              voltageEnd: v,
+              isBlockSymbol: true,
+              blockString: block,
+              symbolIndexInBlock: s,
+              prevVoltage: prevV,
+              hasBoundaryTransition: (v !== prevV && overallIdx > 0),
+              boundaryTransitionLabel: v > prevV ? 'TERNARY RISING' : 'TERNARY FALLING',
+              midTransitionLabel: 'NO MID-BIT TRANSITION',
+              ruleSummary: `Ternary Symbol ${s + 1}/6: '${sym}' (${v > 0 ? '+V' : (v < 0 ? '-V' : '0V')})`,
+              explanation: `Block [${block}] Symbol ${s + 1}: Encoded to ternary symbol '${sym}'.`,
+              dcImpact: 'Strict DC Balanced (Zero DC)',
+              clockSync: 'High (Codebook guarantees transitions)',
+              baudRatio: '0.75 Baud/Bit (6 symbols per 8 bits)'
+            });
+
+            prevV = v;
+          }
+        }
+
+        return {
+          scheme: '8B6T',
+          memoryTrick: '8 binary bits mapped to 6 ternary symbols (+, 0, -) via codebook.',
+          voltageLevels: [1, 0, -1],
+          voltageLabels: ['+V', '0V', '-V'],
+          steps: steps
+        };
+      }
+    }
+
+    class EncodingTestRunner {
+      static runAllTests() {
+        const testPatterns = ['0', '1', '00', '11', '0101', '1010', '11001100', '10110010'];
+        const schemes = [
+          'UNIPOLAR_NRZ', 'NRZ_L', 'NRZ_I', 'POLAR_RZ', 'MANCHESTER',
+          'DIFF_MANCHESTER', 'AMI', 'PSEUDOTERNARY', 'MLT_3', '2B1Q', '8B6T'
+        ];
+
+        let passedCount = 0;
+        let totalTests = schemes.length;
+
+        schemes.forEach(scheme => {
+          let schemePassed = true;
+          testPatterns.forEach(pattern => {
+            try {
+              const res = LineCodingEngine.encode(scheme, pattern);
+              if (!res || !res.steps || res.steps.length === 0) {
+                schemePassed = false;
+              }
+              if (scheme === 'MANCHESTER') {
+                res.steps.forEach(st => {
+                  if (st.voltageStart === st.voltageMid) schemePassed = false;
+                });
+              }
+              if (scheme === 'AMI' && pattern === '11') {
+                if (res.steps[0].voltageStart === res.steps[1].voltageStart) schemePassed = false;
+              }
+            } catch (err) {
+              schemePassed = false;
+            }
+          });
+          if (schemePassed) passedCount++;
+        });
+
+        return {
+          passed: passedCount,
+          total: totalTests,
+          isSuccess: passedCount === totalTests
+        };
+      }
+    }
+
+    class AdvancedWaveformRenderer {
+      constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+
+        this.speed = 0.2;
+        this.isPlaying = true;
+        this.encodedData = null;
+        this.currentStepIndex = 0;
+        this.progressInStep = 0.0;
+        this.lastTimestamp = null;
+        this.animationFrameId = null;
+
+        this.zoomLevel = 1.0;
+        this.panX = 0;
+        this.panY = 0;
+        this.isDragging = false;
+        this.dragStartX = 0;
+        this.dragStartY = 0;
+
+        this.showGrid = true;
+        this.showBaselineTrace = false;
+
+        this.padding = { top: 50, bottom: 50, left: 65, right: 35 };
+
+        this.initViewportEvents();
+        window.addEventListener('resize', () => this.resizeCanvas());
+        this.resizeCanvas();
+      }
+
+      initViewportEvents() {
+        this.canvas.addEventListener('mousedown', (e) => {
+          this.isDragging = true;
+          this.dragStartX = e.clientX - this.panX;
+          this.dragStartY = e.clientY - this.panY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+          if (this.isDragging) {
+            this.panX = e.clientX - this.dragStartX;
+            this.panY = e.clientY - this.dragStartY;
+            this.draw();
+          } else {
+            this.handleHoverTooltip(e);
+          }
+        });
+
+        window.addEventListener('mouseup', () => {
+          this.isDragging = false;
+        });
+
+        this.canvas.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+          this.zoomLevel = Math.max(0.5, Math.min(3.0, this.zoomLevel * zoomFactor));
+          document.getElementById('zoom-level-label').textContent = `${this.zoomLevel.toFixed(1)}x`;
+          this.draw();
+        }, { passive: false });
+      }
+
+      handleHoverTooltip(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        if (!this.encodedData || !this.encodedData.steps || mouseX < this.padding.left || mouseX > this.cssWidth - this.padding.right) {
+          document.getElementById('canvas-tooltip').style.opacity = '0';
+          return;
+        }
+
+        const steps = this.encodedData.steps;
+        const numSteps = steps.length;
+        const plotWidth = (this.cssWidth - this.padding.left - this.padding.right) * this.zoomLevel;
+        const stepWidth = plotWidth / numSteps;
+
+        const relativeX = mouseX - this.padding.left - this.panX;
+        const hoveredStepIdx = Math.floor(relativeX / stepWidth);
+
+        if (hoveredStepIdx >= 0 && hoveredStepIdx < numSteps && hoveredStepIdx <= this.currentStepIndex) {
+          const step = steps[hoveredStepIdx];
+          const subPos = (relativeX % stepWidth) / stepWidth;
+          const currentV = subPos < 0.5 ? step.voltageStart : step.voltageMid;
+          
+          const tooltip = document.getElementById('canvas-tooltip');
+          document.getElementById('tooltip-bit-text').textContent = `Step ${hoveredStepIdx + 1}: Bit '${step.bitLabel}'`;
+          document.getElementById('tooltip-voltage-text').textContent = `Instant Voltage: ${currentV > 0 ? '+' : ''}${currentV}V`;
+          document.getElementById('tooltip-phase-text').textContent = `Sub-interval: ${subPos < 0.5 ? 'First Half (T/2)' : 'Second Half (T/2)'}`;
+
+          tooltip.style.left = `${mouseX + 15}px`;
+          tooltip.style.top = `${mouseY - 35}px`;
+          tooltip.style.opacity = '1';
+        } else {
+          document.getElementById('canvas-tooltip').style.opacity = '0';
+        }
+      }
+
+      resizeCanvas() {
+        const rect = this.canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        this.ctx.scale(dpr, dpr);
+        this.cssWidth = rect.width;
+        this.cssHeight = rect.height;
+        this.draw();
+      }
+
+      setSpeed(speedVal) {
+        this.speed = parseFloat(speedVal);
+      }
+
+      setEncodedData(data) {
+        this.encodedData = data;
+        this.currentStepIndex = 0;
+        this.progressInStep = 0.0;
+        this.lastTimestamp = null;
+        this.renderBitNavBar();
+        this.draw();
+      }
+
+      renderBitNavBar() {
+        const navContainer = document.getElementById('bit-nav-bar');
+        if (!navContainer || !this.encodedData) return;
+        navContainer.innerHTML = '';
+
+        this.encodedData.steps.forEach((st, idx) => {
+          const btn = document.createElement('button');
+          btn.className = `px-2.5 py-1 rounded-lg text-xs font-mono font-bold border transition ${idx === this.currentStepIndex ? 'bg-brand-600 text-white border-brand-400 shadow' : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'}`;
+          btn.textContent = `${idx + 1}:${st.bitLabel}`;
+          btn.addEventListener('click', () => {
+            this.pause();
+            this.currentStepIndex = idx;
+            this.progressInStep = 1.0;
+            this.draw();
+            updateStepUI(st, idx, this.encodedData.steps.length);
+            this.renderBitNavBar();
+          });
+          navContainer.appendChild(btn);
+        });
+      }
+
+      start() {
+        this.isPlaying = true;
+        this.lastTimestamp = performance.now();
+        if (!this.animationFrameId) {
+          this.animationFrameId = requestAnimationFrame((ts) => this.animateLoop(ts));
+        }
+      }
+
+      pause() {
+        this.isPlaying = false;
+        if (this.animationFrameId) {
+          cancelAnimationFrame(this.animationFrameId);
+          this.animationFrameId = null;
+        }
+      }
+
+      restart() {
+        this.currentStepIndex = 0;
+        this.progressInStep = 0.0;
+        this.lastTimestamp = performance.now();
+        this.draw();
+      }
+
+      showFull() {
+        if (!this.encodedData) return;
+        this.pause();
+        this.currentStepIndex = this.encodedData.steps.length - 1;
+        this.progressInStep = 1.0;
+        this.draw();
+        updateStepUI(this.encodedData.steps[this.currentStepIndex], this.currentStepIndex, this.encodedData.steps.length);
+      }
+
+      nextStep() {
+        if (!this.encodedData) return;
+        this.pause();
+        if (this.currentStepIndex < this.encodedData.steps.length - 1) {
+          this.currentStepIndex++;
+          this.progressInStep = 1.0;
+        } else {
+          this.progressInStep = 1.0;
+        }
+        this.draw();
+        updateStepUI(this.encodedData.steps[this.currentStepIndex], this.currentStepIndex, this.encodedData.steps.length);
+        this.renderBitNavBar();
+      }
+
+      prevStep() {
+        if (!this.encodedData) return;
+        this.pause();
+        if (this.currentStepIndex > 0) {
+          this.currentStepIndex--;
+          this.progressInStep = 1.0;
+        } else {
+          this.progressInStep = 0.0;
+        }
+        this.draw();
+        updateStepUI(this.encodedData.steps[this.currentStepIndex], this.currentStepIndex, this.encodedData.steps.length);
+        this.renderBitNavBar();
+      }
+
+      animateLoop(timestamp) {
+        if (!this.isPlaying) return;
+
+        if (!this.lastTimestamp) this.lastTimestamp = timestamp;
+        const elapsed = (timestamp - this.lastTimestamp) / 1000;
+        this.lastTimestamp = timestamp;
+
+        if (this.encodedData && this.encodedData.steps.length > 0) {
+          const baseStepDuration = 1.5;
+          const stepDuration = baseStepDuration / this.speed;
+
+          this.progressInStep += elapsed / stepDuration;
+
+          if (this.progressInStep >= 1.0) {
+            this.progressInStep = 1.0;
+            if (this.currentStepIndex < this.encodedData.steps.length - 1) {
+              this.currentStepIndex++;
+              this.progressInStep = 0.0;
+              this.renderBitNavBar();
+            } else {
+              this.isPlaying = false;
+              updatePlayPauseUI(false);
+            }
+          }
+
+          this.draw();
+          updateStepUI(this.encodedData.steps[this.currentStepIndex], this.currentStepIndex, this.encodedData.steps.length);
+        }
+
+        if (this.isPlaying) {
+          this.animationFrameId = requestAnimationFrame((ts) => this.animateLoop(ts));
+        } else {
+          this.animationFrameId = null;
+        }
+      }
+
+      getY(v) {
+        const plotHeight = (this.cssHeight - this.padding.top - this.padding.bottom);
+        const midY = this.padding.top + plotHeight / 2 + this.panY;
+        const scale = (plotHeight / 2) * 0.75 * this.zoomLevel;
+        return midY - (v * scale);
+      }
+
+      draw() {
+        const ctx = this.ctx;
+        const w = this.cssWidth;
+        const h = this.cssHeight;
+
+        ctx.clearRect(0, 0, w, h);
+
+        if (!this.encodedData || !this.encodedData.steps || this.encodedData.steps.length === 0) return;
+
+        const steps = this.encodedData.steps;
+        const numSteps = steps.length;
+        const plotWidth = (w - this.padding.left - this.padding.right) * this.zoomLevel;
+        const stepWidth = plotWidth / numSteps;
+
+        if (this.showGrid) {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+          ctx.lineWidth = 1;
+          for (let x = 0; x < w; x += 15) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, h);
+            ctx.stroke();
+          }
+        }
+
+        const zeroY = this.getY(0);
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(this.padding.left, zeroY);
+        ctx.lineTo(w - this.padding.right, zeroY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '11px Fira Code';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+
+        const levels = this.encodedData.voltageLevels;
+        const labels = this.encodedData.voltageLabels;
+
+        levels.forEach((lvl, idx) => {
+          const y = this.getY(lvl);
+          if (lvl !== 0) {
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(51, 65, 85, 0.6)';
+            ctx.setLineDash([3, 3]);
+            ctx.moveTo(this.padding.left, y);
+            ctx.lineTo(w - this.padding.right, y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+          ctx.fillText(labels[idx], this.padding.left - 10, y);
+        });
+
+        for (let i = 0; i <= numSteps; i++) {
+          const x = this.padding.left + this.panX + i * stepWidth;
+          if (x >= this.padding.left - 50 && x <= w - this.padding.right + 50) {
+            ctx.beginPath();
+            ctx.setLineDash([2, 4]);
+            ctx.strokeStyle = '#1e293b';
+            ctx.moveTo(x, this.padding.top - 20);
+            ctx.lineTo(x, h - this.padding.bottom + 20);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            if (i < numSteps) {
+              const isCurrent = (i === this.currentStepIndex);
+              ctx.fillStyle = isCurrent ? 'rgba(14, 165, 233, 0.15)' : 'transparent';
+              ctx.fillRect(x, this.padding.top - 30, stepWidth, 22);
+
+              ctx.fillStyle = isCurrent ? '#38bdf8' : '#64748b';
+              ctx.font = isCurrent ? 'bold 13px Fira Code' : '12px Fira Code';
+              ctx.textAlign = 'center';
+              ctx.fillText(steps[i].bitLabel, x + stepWidth / 2, this.padding.top - 18);
+            }
+          }
+        }
+
+        if (this.showBaselineTrace) {
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = 'rgba(234, 179, 8, 0.5)';
+          ctx.setLineDash([6, 3]);
+          ctx.beginPath();
+          for (let i = 0; i <= this.currentStepIndex; i++) {
+            const st = steps[i];
+            const rawBit = st.bitLabel.charAt(0);
+            const vBase = rawBit === '1' ? 1 : 0;
+            const xS = this.padding.left + this.panX + i * stepWidth;
+            const xE = xS + stepWidth;
+            const yB = this.getY(vBase);
+            if (i === 0) ctx.moveTo(xS, yB);
+            ctx.lineTo(xE, yB);
+          }
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        ctx.lineWidth = 3.5;
+        ctx.strokeStyle = '#38bdf8';
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 12;
+        ctx.lineCap = 'round';
+
+        let currentPointerPos = { x: this.padding.left + this.panX, y: this.getY(steps[0].voltageStart) };
+
+        for (let i = 0; i <= this.currentStepIndex; i++) {
+          const step = steps[i];
+          const xStart = this.padding.left + this.panX + i * stepWidth;
+          const xMid = xStart + stepWidth / 2;
+          const xEnd = xStart + stepWidth;
+
+          const yStart = this.getY(step.voltageStart);
+          const yMid = this.getY(step.voltageMid);
+
+          const isFullyDrawnStep = (i < this.currentStepIndex);
+          const localProgress = isFullyDrawnStep ? 1.0 : this.progressInStep;
+
+          ctx.beginPath();
+
+          if (step.hasBoundaryTransition) {
+            const yPrev = this.getY(step.prevVoltage);
+            ctx.moveTo(xStart, yPrev);
+            ctx.lineTo(xStart, yStart);
+          }
+
+          const targetX1 = xStart + (xMid - xStart) * Math.min(1.0, localProgress * 2);
+          ctx.moveTo(xStart, yStart);
+          ctx.lineTo(targetX1, yStart);
+          currentPointerPos = { x: targetX1, y: yStart };
+
+          if (localProgress >= 0.5) {
+            if (yStart !== yMid) {
+              const targetYMid = yStart + (yMid - yStart) * Math.min(1.0, (localProgress - 0.5) * 4);
+              ctx.moveTo(xMid, yStart);
+              ctx.lineTo(xMid, targetYMid);
+              currentPointerPos = { x: xMid, y: targetYMid };
+            }
+
+            if (localProgress > 0.5) {
+              const targetX2 = xMid + (xEnd - xMid) * Math.min(1.0, (localProgress - 0.5) * 2);
+              ctx.moveTo(xMid, yMid);
+              ctx.lineTo(targetX2, yMid);
+              currentPointerPos = { x: targetX2, y: yMid };
+            }
+          }
+
+          ctx.stroke();
+        }
+
+        ctx.shadowBlur = 0;
+
+        if (this.isPlaying || this.progressInStep < 1.0) {
+          ctx.beginPath();
+          ctx.arc(currentPointerPos.x, currentPointerPos.y, 6, 0, Math.PI * 2);
+          ctx.fillStyle = '#00f0ff';
+          ctx.shadowColor = '#00f0ff';
+          ctx.shadowBlur = 18;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(currentPointerPos.x, currentPointerPos.y, 11, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        }
+      }
+    }
+
+    class CodebookUIEngine {
+      static renderCodebookForScheme(scheme, activeStep) {
+        const container = document.getElementById('codebook-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (scheme === '2B1Q') {
+          container.innerHTML = `
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h4 class="text-sm font-bold text-white font-mono flex items-center space-x-2">
+                  <i data-lucide="grid" class="w-4 h-4 text-brand-accent"></i>
+                  <span>2B1Q Quaternary Symbol Mapping Matrix</span>
+                </h4>
+                <span class="text-xs text-slate-400 font-mono">2 Bits → 1 Symbol Level</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs">
+                <div class="p-3 rounded-xl border ${activeStep && activeStep.bitLabel === '00' ? 'bg-brand-600/30 border-brand-400 ring-2 ring-brand-500' : 'bg-slate-900 border-slate-800'} text-center space-y-1">
+                  <span class="text-slate-400 block text-[10px]">PAIR 00</span>
+                  <span class="text-red-400 font-bold text-base">-3V Level</span>
+                </div>
+                <div class="p-3 rounded-xl border ${activeStep && activeStep.bitLabel === '01' ? 'bg-brand-600/30 border-brand-400 ring-2 ring-brand-500' : 'bg-slate-900 border-slate-800'} text-center space-y-1">
+                  <span class="text-slate-400 block text-[10px]">PAIR 01</span>
+                  <span class="text-amber-400 font-bold text-base">-1V Level</span>
+                </div>
+                <div class="p-3 rounded-xl border ${activeStep && activeStep.bitLabel === '10' ? 'bg-brand-600/30 border-brand-400 ring-2 ring-brand-500' : 'bg-slate-900 border-slate-800'} text-center space-y-1">
+                  <span class="text-slate-400 block text-[10px]">PAIR 10</span>
+                  <span class="text-cyan-400 font-bold text-base">+1V Level</span>
+                </div>
+                <div class="p-3 rounded-xl border ${activeStep && activeStep.bitLabel === '11' ? 'bg-brand-600/30 border-brand-400 ring-2 ring-brand-500' : 'bg-slate-900 border-slate-800'} text-center space-y-1">
+                  <span class="text-slate-400 block text-[10px]">PAIR 11</span>
+                  <span class="text-emerald-400 font-bold text-base">+3V Level</span>
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (scheme === '8B6T') {
+          container.innerHTML = `
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h4 class="text-sm font-bold text-white font-mono flex items-center space-x-2">
+                  <i data-lucide="book" class="w-4 h-4 text-brand-accent"></i>
+                  <span>8B6T Ternary Codebook Table</span>
+                </h4>
+                <span class="text-xs text-slate-400 font-mono">8 Binary Bits → 6 Ternary Symbols (+, 0, -)</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs font-mono text-slate-300">
+                  <thead class="bg-slate-900 text-slate-400 border-b border-slate-800">
+                    <tr>
+                      <th class="p-2.5">8-Bit Data Block</th>
+                      <th class="p-2.5">Ternary Symbol Pattern</th>
+                      <th class="p-2.5">Weight Balance</th>
+                      <th class="p-2.5">Active Status</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-800/60">
+                    <tr class="bg-slate-900/50">
+                      <td class="p-2.5 font-bold text-cyan-400">10110010</td>
+                      <td class="p-2.5 font-bold text-amber-300">+ 0 - + - 0</td>
+                      <td class="p-2.5 text-emerald-400">0 (DC Balanced)</td>
+                      <td class="p-2.5 text-brand-accent">Active Sequence</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        } else if (scheme === 'MLT_3') {
+          container.innerHTML = `
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h4 class="text-sm font-bold text-white font-mono flex items-center space-x-2">
+                  <i data-lucide="repeat" class="w-4 h-4 text-brand-accent"></i>
+                  <span>MLT-3 State Machine Cycle Diagram</span>
+                </h4>
+                <span class="text-xs text-slate-400 font-mono">State Sequence: +V → 0V → -V → 0V</span>
+              </div>
+              <div class="flex flex-wrap items-center justify-around gap-2 font-mono text-xs pt-2">
+                <div class="p-3 rounded-xl border bg-slate-900 border-slate-800 text-center space-y-1 w-28">
+                  <span class="text-slate-400 block text-[10px]">STATE 1</span>
+                  <span class="text-emerald-400 font-bold text-sm">+V Level</span>
+                </div>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-slate-600"></i>
+                <div class="p-3 rounded-xl border bg-slate-900 border-slate-800 text-center space-y-1 w-28">
+                  <span class="text-slate-400 block text-[10px]">STATE 2</span>
+                  <span class="text-cyan-400 font-bold text-sm">0V Level</span>
+                </div>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-slate-600"></i>
+                <div class="p-3 rounded-xl border bg-slate-900 border-slate-800 text-center space-y-1 w-28">
+                  <span class="text-slate-400 block text-[10px]">STATE 3</span>
+                  <span class="text-red-400 font-bold text-sm">-V Level</span>
+                </div>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-slate-600"></i>
+                <div class="p-3 rounded-xl border bg-slate-900 border-slate-800 text-center space-y-1 w-28">
+                  <span class="text-slate-400 block text-[10px]">STATE 4</span>
+                  <span class="text-cyan-400 font-bold text-sm">0V Level</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+        lucide.createIcons();
+      }
+    }
+
+    class BitRuleExplorer {
+      static renderBitRules(scheme, incomingState = 'HIGH') {
+        this.drawSingleBitCanvas('canvas-bit-0', scheme, '0', incomingState, 'rule-list-bit-0');
+        this.drawSingleBitCanvas('canvas-bit-1', scheme, '1', incomingState, 'rule-list-bit-1');
+      }
+
+      static drawSingleBitCanvas(canvasId, scheme, bitVal, incomingState, listId) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width = canvas.offsetWidth;
+        const h = canvas.height = canvas.offsetHeight;
+
+        ctx.clearRect(0, 0, w, h);
+
+        const options = {
+          nrzIInitial: incomingState,
+          diffInitial: incomingState,
+          amiInitial: incomingState === 'HIGH' ? 'POSITIVE' : 'NEGATIVE'
+        };
+
+        const encoded = LineCodingEngine.encode(scheme, bitVal, options);
+        const step = encoded.steps[0];
+
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(0, h / 2);
+        ctx.lineTo(w, h / 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const getY = (v) => (h / 2) - (v * (h / 3));
+        const yStart = getY(step.voltageStart);
+        const yMid = getY(step.voltageMid);
+        const xMid = w / 2;
+
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = bitVal === '1' ? '#34d399' : '#f87171';
+        ctx.beginPath();
+
+        if (step.hasBoundaryTransition) {
+          const yPrev = getY(incomingState === 'HIGH' ? 1 : -1);
+          ctx.moveTo(20, yPrev);
+          ctx.lineTo(20, yStart);
+        } else {
+          ctx.moveTo(20, yStart);
+        }
+
+        ctx.lineTo(xMid, yStart);
+        if (yStart !== yMid) {
+          ctx.lineTo(xMid, yMid);
+        }
+        ctx.lineTo(w - 20, yMid);
+        ctx.stroke();
+
+        const listEl = document.getElementById(listId);
+        if (listEl) {
+          listEl.innerHTML = `
+            <li><strong class="text-slate-200">Rule:</strong> ${step.ruleSummary}</li>
+            <li><strong class="text-slate-200">Transition:</strong> ${step.midTransitionLabel}</li>
+            <li><strong class="text-slate-200">Result Level:</strong> ${step.voltageEnd > 0 ? '+V' : (step.voltageEnd < 0 ? '-V' : '0V')}</li>
+          `;
+        }
+      }
+    }
+
+    let renderer = null;
+
+    function getActiveOptions() {
+      return {
+        nrzLMapping: document.getElementById('opt-nrz-l-mapping')?.value || 'ONE_HIGH',
+        nrzIInitial: document.getElementById('opt-nrz-i-initial')?.value || 'HIGH',
+        rzConvention: document.getElementById('opt-rz-convention')?.value || 'STANDARD',
+        manchesterConvention: document.getElementById('opt-manchester-convention')?.value || 'IEEE',
+        diffInitial: document.getElementById('opt-diff-initial')?.value || 'HIGH',
+        amiInitial: document.getElementById('opt-ami-initial')?.value || 'POSITIVE',
+        pseudoInitial: document.getElementById('opt-pseudo-initial')?.value || 'POSITIVE',
+        mlt3InitialState: parseInt(document.getElementById('opt-mlt3-initial-state')?.value || '0', 10),
+        mlt3InitialDir: parseInt(document.getElementById('opt-mlt3-initial-dir')?.value || '1', 10)
+      };
+    }
+
+    function reencodeAndDraw() {
+      const bitString = document.getElementById('binary-input').value || '10110010';
+      const scheme = document.getElementById('scheme-select').value;
+      const options = getActiveOptions();
+
+      const encodedData = LineCodingEngine.encode(scheme, bitString, options);
+
+      document.getElementById('memory-trick-text').textContent = encodedData.memoryTrick;
+      document.getElementById('mapping-summary-text').textContent = scheme.replace('_', ' ') + ' Active';
+
+      renderer.setEncodedData(encodedData);
+      renderer.start();
+      updatePlayPauseUI(true);
+
+      const activeStep = encodedData.steps[0];
+      CodebookUIEngine.renderCodebookForScheme(scheme, activeStep);
+
+      const incomingState = document.getElementById('incoming-state-select').value;
+      BitRuleExplorer.renderBitRules(scheme, incomingState);
+    }
+
+    function updateStepUI(step, index, total) {
+      if (!step) return;
+      document.getElementById('step-metrics-header').textContent = `Step ${index + 1} of ${total}`;
+      document.getElementById('detail-step-badge').textContent = `BIT ${step.bitLabel}`;
+      document.getElementById('detail-step-title').textContent = step.ruleSummary;
+      document.getElementById('detail-step-description').textContent = step.explanation;
+
+      const formatV = (v) => v > 0 ? `+V (${v.toFixed(1)}V)` : (v < 0 ? `-V (${v.toFixed(1)}V)` : `0V (0.0V)`);
+      document.getElementById('metric-start-v').textContent = formatV(step.voltageStart);
+      document.getElementById('metric-mid-v').textContent = formatV(step.voltageMid);
+      document.getElementById('metric-end-v').textContent = formatV(step.voltageEnd);
+
+      document.getElementById('metric-dc-impact').textContent = step.dcImpact || 'Neutral';
+      document.getElementById('metric-sync-rating').textContent = step.clockSync || 'Standard';
+      document.getElementById('metric-baud-rate').textContent = step.baudRatio || '1.0 Baud/Bit';
+
+      const edgeBadge = document.getElementById('detail-edge-badge');
+      if (step.voltageMid > step.voltageStart) {
+        edgeBadge.innerHTML = '<span>↗ RISING</span>';
+        edgeBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/50 flex items-center space-x-1';
+      } else if (step.voltageMid < step.voltageStart) {
+        edgeBadge.innerHTML = '<span>↘ FALLING</span>';
+        edgeBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-red-950 text-red-400 border border-red-800/50 flex items-center space-x-1';
+      } else {
+        edgeBadge.innerHTML = '<span>→ HOLD</span>';
+        edgeBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700 flex items-center space-x-1';
+      }
+
+      const scheme = document.getElementById('scheme-select').value;
+      CodebookUIEngine.renderCodebookForScheme(scheme, step);
+    }
+
+    function updatePlayPauseUI(isPlaying) {
+      const icon = document.getElementById('play-pause-icon');
+      const label = document.getElementById('play-pause-label');
+      if (isPlaying) {
+        icon.setAttribute('data-lucide', 'pause');
+        label.textContent = 'Pause';
+      } else {
+        icon.setAttribute('data-lucide', 'play');
+        label.textContent = 'Play';
+      }
+      lucide.createIcons();
+    }
+
+    function renderDynamicToggles(scheme) {
+      const container = document.getElementById('dynamic-toggles-container');
+      container.innerHTML = '';
+
+      if (scheme === 'MANCHESTER') {
+        container.innerHTML = `
+          <div class="flex items-center space-x-1.5">
+            <span>Standard Convention:</span>
+            <select id="opt-manchester-convention" class="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-cyan-400 font-bold">
+              <option value="IEEE" selected>IEEE 802.3 (0: High->Low, 1: Low->High)</option>
+              <option value="THOMAS">G.E. Thomas (0: Low->High, 1: High->Low)</option>
+            </select>
+          </div>
+        `;
+      } else if (scheme === 'NRZ_L') {
+        container.innerHTML = `
+          <div class="flex items-center space-x-1.5">
+            <span>Mapping Rule:</span>
+            <select id="opt-nrz-l-mapping" class="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-cyan-400 font-bold">
+              <option value="ONE_HIGH" selected>1 = HIGH (+V), 0 = LOW (-V)</option>
+              <option value="ONE_LOW">1 = LOW (-V), 0 = HIGH (+V)</option>
+            </select>
+          </div>
+        `;
+      } else if (scheme === 'NRZ_I' || scheme === 'DIFF_MANCHESTER') {
+        container.innerHTML = `
+          <div class="flex items-center space-x-1.5">
+            <span>Initial Signal Level:</span>
+            <select id="${scheme === 'NRZ_I' ? 'opt-nrz-i-initial' : 'opt-diff-initial'}" class="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-cyan-400 font-bold">
+              <option value="HIGH" selected>Start HIGH (+V)</option>
+              <option value="LOW">Start LOW (-V)</option>
+            </select>
+          </div>
+        `;
+      } else if (scheme === 'AMI' || scheme === 'PSEUDOTERNARY') {
+        container.innerHTML = `
+          <div class="flex items-center space-x-1.5">
+            <span>First Pulse Polarity:</span>
+            <select id="${scheme === 'AMI' ? 'opt-ami-initial' : 'opt-pseudo-initial'}" class="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-cyan-400 font-bold">
+              <option value="POSITIVE" selected>First Pulse Positive (+V)</option>
+              <option value="NEGATIVE">First Pulse Negative (-V)</option>
+            </select>
+          </div>
+        `;
+      }
+
+      const dynamicSelects = container.querySelectorAll('select');
+      dynamicSelects.forEach(sel => sel.addEventListener('change', reencodeAndDraw));
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+
+      const testReport = EncodingTestRunner.runAllTests();
+      const testBadge = document.getElementById('test-suite-badge');
+      const testText = document.getElementById('test-badge-text');
+      if (testReport.isSuccess) {
+        testText.textContent = `Engine Audit Passed (${testReport.passed}/${testReport.total})`;
+      } else {
+        testBadge.className = 'px-3 py-1 rounded-full text-xs font-mono font-medium bg-red-950/80 text-red-400 border border-red-800/50 flex items-center space-x-1.5';
+        testText.textContent = `Engine Audit Warning (${testReport.passed}/${testReport.total})`;
+      }
+
+      renderer = new AdvancedWaveformRenderer('waveform-canvas');
+
+      document.getElementById('binary-input').addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^01]/g, '');
+        document.getElementById('bit-count-label').textContent = `${e.target.value.length} bits`;
+        reencodeAndDraw();
+      });
+
+      document.getElementById('btn-random-bits').addEventListener('click', () => {
+        let randomBits = '';
+        for (let i = 0; i < 8; i++) randomBits += Math.floor(Math.random() * 2);
+        document.getElementById('binary-input').value = randomBits;
+        document.getElementById('bit-count-label').textContent = `8 bits`;
+        reencodeAndDraw();
+      });
+
+      document.getElementById('scheme-select').addEventListener('change', (e) => {
+        renderDynamicToggles(e.target.value);
+        reencodeAndDraw();
+      });
+
+      document.getElementById('btn-toggle-grid').addEventListener('click', (e) => {
+        renderer.showGrid = !renderer.showGrid;
+        e.currentTarget.classList.toggle('bg-slate-800');
+        renderer.draw();
+      });
+
+      document.getElementById('btn-toggle-baseline').addEventListener('click', (e) => {
+        renderer.showBaselineTrace = !renderer.showBaselineTrace;
+        e.currentTarget.classList.toggle('bg-slate-800');
+        renderer.draw();
+      });
+
+      document.getElementById('btn-zoom-in').addEventListener('click', () => {
+        renderer.zoomLevel = Math.min(3.0, renderer.zoomLevel + 0.2);
+        document.getElementById('zoom-level-label').textContent = `${renderer.zoomLevel.toFixed(1)}x`;
+        renderer.draw();
+      });
+
+      document.getElementById('btn-zoom-out').addEventListener('click', () => {
+        renderer.zoomLevel = Math.max(0.5, renderer.zoomLevel - 0.2);
+        document.getElementById('zoom-level-label').textContent = `${renderer.zoomLevel.toFixed(1)}x`;
+        renderer.draw();
+      });
+
+      document.getElementById('btn-reset-view').addEventListener('click', () => {
+        renderer.zoomLevel = 1.0;
+        renderer.panX = 0;
+        renderer.panY = 0;
+        document.getElementById('zoom-level-label').textContent = `1.0x`;
+        renderer.draw();
+      });
+
+      const speedBtns = document.querySelectorAll('.speed-btn');
+      speedBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          speedBtns.forEach(b => b.classList.remove('active', 'bg-brand-600', 'text-white'));
+          speedBtns.forEach(b => b.classList.add('text-slate-400'));
+          btn.classList.add('active', 'bg-brand-600', 'text-white');
+          btn.classList.remove('text-slate-400');
+
+          const speedVal = btn.getAttribute('data-speed');
+          document.getElementById('speed-display').textContent = `${speedVal}×`;
+          renderer.setSpeed(speedVal);
+        });
+      });
+
+      document.getElementById('btn-play-pause').addEventListener('click', () => {
+        if (renderer.isPlaying) {
+          renderer.pause();
+          updatePlayPauseUI(false);
+        } else {
+          renderer.start();
+          updatePlayPauseUI(true);
+        }
+      });
+
+      document.getElementById('btn-restart').addEventListener('click', () => {
+        renderer.restart();
+        renderer.start();
+        updatePlayPauseUI(true);
+      });
+
+      document.getElementById('btn-show-full').addEventListener('click', () => {
+        renderer.showFull();
+        updatePlayPauseUI(false);
+      });
+
+      document.getElementById('btn-next-step').addEventListener('click', () => {
+        renderer.nextStep();
+        updatePlayPauseUI(false);
+      });
+
+      document.getElementById('btn-prev-step').addEventListener('click', () => {
+        renderer.prevStep();
+        updatePlayPauseUI(false);
+      });
+
+      document.getElementById('incoming-state-select').addEventListener('change', () => {
+        const scheme = document.getElementById('scheme-select').value;
+        const state = document.getElementById('incoming-state-select').value;
+        BitRuleExplorer.renderBitRules(scheme, state);
+      });
+
+      document.querySelectorAll('.btn-demo-bit').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const bit = btn.getAttribute('data-bit');
+          document.getElementById('binary-input').value = bit;
+          reencodeAndDraw();
+        });
+      });
+
+      renderDynamicToggles('MANCHESTER');
+      reencodeAndDraw();
+    });
+  </script>
+</body>
+</html>
